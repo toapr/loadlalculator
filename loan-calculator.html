@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>贷款计算器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+            align-items: stretch;
+        }
+
+        .calculator-section,
+        .results-section {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .calculator-section {
+            background: #f8f9ff;
+            padding: 25px;
+            border-radius: 10px;
+            border: 1px solid #e1e5f7;
+            position: relative;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5f7;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .loan-amount-display {
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: #f0f8ff;
+            border: 1px solid #4facfe;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #4facfe;
+            font-weight: 600;
+        }
+
+        #loanAmountChinese {
+            font-family: 'Microsoft YaHei', serif;
+        }
+
+        .calculate-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .calculate-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .results-section {
+            background: #f8f9ff;
+            padding: 25px;
+            border-radius: 10px;
+            border: 1px solid #e1e5f7;
+            height: 100%;
+        }
+
+        .results-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            gap: 20px;
+        }
+
+        .results-content {
+            flex: 1;
+        }
+
+        .interest-rates-section {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e1e5f7;
+            flex-shrink: 0;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #e1e5f7;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .result-value {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #4facfe;
+        }
+
+        .payment-schedule {
+            grid-column: 1 / -1;
+            margin-top: 20px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .schedule-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .schedule-table th,
+        .schedule-table td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .schedule-table th {
+            background: #f8f9ff;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .schedule-table tr:hover {
+            background: #f8f9ff;
+        }
+
+        .chart-container {
+            grid-column: 1 / -1;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .chart {
+            display: inline-block;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            position: relative;
+            background: conic-gradient(
+                #4facfe 0deg 180deg,
+                #667eea 180deg 360deg
+            );
+        }
+
+        .chart::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px;
+            height: 100px;
+            background: white;
+            border-radius: 50%;
+        }
+
+        .chart-legend {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+
+        .legend-principal {
+            background: #4facfe;
+        }
+
+        .legend-interest {
+            background: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .schedule-table {
+                font-size: 14px;
+            }
+
+            .schedule-table th,
+            .schedule-table td {
+                padding: 8px;
+            }
+
+            /* 移动端隐藏左侧竖向标题 */
+            .left-vertical-title {
+                display: none;
+            }
+        }
+
+        .error-message {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* 左侧竖向标题样式 */
+        .left-vertical-title {
+            position: fixed;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1000;
+        }
+
+        .left-vertical-title h2 {
+            writing-mode: vertical-rl;
+            text-orientation: upright;
+            margin: 0;
+            padding: 20px 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+            font-size: 1.5em;
+            font-weight: 600;
+            letter-spacing: 8px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .payment-method {
+            margin-bottom: 20px;
+        }
+
+        .payment-method label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .calculation-method-options {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+        }
+
+        .method-option {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            border: 2px solid #e1e5f7;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+
+        .method-option:hover {
+            border-color: #4facfe;
+            background: #f8f9ff;
+        }
+
+        .method-option input[type="radio"] {
+            margin-right: 8px;
+            transform: scale(1.2);
+        }
+
+        .method-option.selected {
+            border-color: #4facfe;
+            background: #f0f8ff;
+        }
+
+        .method-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .method-desc {
+            font-size: 12px;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .payment-frequency {
+            margin-bottom: 20px;
+        }
+
+        .payment-frequency label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .frequency-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .frequency-option {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border: 2px solid #e1e5f7;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .frequency-option:hover {
+            border-color: #4facfe;
+            background: #f8f9ff;
+        }
+
+        .frequency-option input[type="radio"] {
+            margin-right: 8px;
+            transform: scale(1.1);
+        }
+
+        .frequency-option.selected {
+            border-color: #4facfe;
+            background: #f0f8ff;
+        }
+
+        .frequency-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .frequency-desc {
+            font-size: 11px;
+            color: #666;
+            margin-top: 1px;
+        }
+
+        .interest-calculation-method {
+            margin-bottom: 20px;
+        }
+
+        .interest-calculation-method label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .calculation-method-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .calculation-method-option {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border: 2px solid #e1e5f7;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .calculation-method-option:hover {
+            border-color: #4facfe;
+            background: #f8f9ff;
+        }
+
+        .calculation-method-option input[type="radio"] {
+            margin-right: 8px;
+            transform: scale(1.1);
+        }
+
+        .calculation-method-option.selected {
+            border-color: #4facfe;
+            background: #f0f8ff;
+        }
+
+        .calculation-method-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .calculation-method-desc {
+            font-size: 11px;
+            color: #666;
+            margin-top: 1px;
+        }
+
+        .floating-title {
+            position: absolute;
+            top: -15px;
+            left: 20px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+            z-index: 10;
+        }
+
+        .floating-title h2 {
+            margin: 0;
+            font-size: 1.4em;
+            font-weight: 600;
+        }
+
+
+
+        .rate-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e1e5f7;
+        }
+
+        .rate-item:last-child {
+            border-bottom: none;
+        }
+
+        .rate-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .rate-value {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <!-- 左侧竖向标题 -->
+    <div class="left-vertical-title">
+        <h2>贷款计算器</h2>
+    </div>
+    
+    <div class="container">
+    
+
+        <div class="main-content">
+            <div class="calculator-section">
+               
+           
+                 <div class="input-group">
+                    <label for="loanAmount">贷款金额 (元)</label>
+                    <input type="number" id="loanAmount" placeholder="请输入贷款金额" value="10000" oninput="updateLoanAmountDisplay()">
+                    <div class="loan-amount-display">
+                        <span id="loanAmountChinese">壹万元整</span>
+                    </div>
+                    <div class="error-message" id="loanAmountError">请输入有效的贷款金额</div>
+                </div>
+                <div class="payment-method">
+                    <label>还款方式</label>
+                    <div class="calculation-method-options">
+                        <div class="method-option selected" onclick="selectPaymentMethod(this, 'equalInstallment')">
+                            <input type="radio" name="paymentMethod" value="equalInstallment" checked>
+                            <div>
+                                <div class="method-name">等额本息</div>
+                                <div class="method-desc">每月还款额固定</div>
+                            </div>
+                        </div>
+                        <div class="method-option" onclick="selectPaymentMethod(this, 'equalPrincipal')">
+                            <input type="radio" name="paymentMethod" value="equalPrincipal">
+                            <div>
+                                <div class="method-name">等额本金</div>
+                                <div class="method-desc">每月本金固定</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="payment-frequency">
+                    <label>还款频次</label>
+                    <div class="frequency-options">
+                        <div class="frequency-option selected" onclick="selectFrequency(this, 'monthly')">
+                            <input type="radio" name="frequency" value="monthly" checked>
+                            <div>
+                                <div class="frequency-name">月度</div>
+                                <div class="frequency-desc">每月还款</div>
+                            </div>
+                        </div>
+                        <div class="frequency-option" onclick="selectFrequency(this, 'quarterly')">
+                            <input type="radio" name="frequency" value="quarterly">
+                            <div>
+                                <div class="frequency-name">季度</div>
+                                <div class="frequency-desc">每季度还款</div>
+                            </div>
+                        </div>
+                        <div class="frequency-option" onclick="selectFrequency(this, 'semiAnnual')">
+                            <input type="radio" name="frequency" value="semiAnnual">
+                            <div>
+                                <div class="frequency-name">半年度</div>
+                                <div class="frequency-desc">每半年还款</div>
+                            </div>
+                        </div>
+                        <div class="frequency-option" onclick="selectFrequency(this, 'annual')">
+                            <input type="radio" name="frequency" value="annual">
+                            <div>
+                                <div class="frequency-name">年度</div>
+                                <div class="frequency-desc">每年还款</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+               
+
+                <div class="interest-calculation-method">
+                    <label>利率计算方式</label>
+                    <div class="calculation-method-options">
+                        <div class="calculation-method-option selected" onclick="selectCalculationMethod(this, 'annualRate', 3.72)">
+                            <input type="radio" name="calculationMethod" value="annualRate" checked>
+                            <div>
+                                <div class="calculation-method-name">年利率</div>
+                                <div class="calculation-method-desc">3.72%</div>
+                            </div>
+                        </div>
+                        <div class="calculation-method-option" onclick="selectCalculationMethod(this, 'annualFlatRate', 1.95)">
+                            <input type="radio" name="calculationMethod" value="annualFlatRate">
+                            <div>
+                                <div class="calculation-method-name">年平息</div>
+                                <div class="calculation-method-desc">1.95%</div>
+                            </div>
+                        </div>
+                        <div class="calculation-method-option" onclick="selectCalculationMethod(this, 'monthlyRate', 3.10)">
+                            <input type="radio" name="calculationMethod" value="monthlyRate">
+                            <div>
+                                <div class="calculation-method-name">月利率</div>
+                                <div class="calculation-method-desc">3.10‰</div>
+                            </div>
+                        </div>
+                        <div class="calculation-method-option" onclick="selectCalculationMethod(this, 'monthlyFlatRate', 1.62)">
+                            <input type="radio" name="calculationMethod" value="monthlyFlatRate">
+                            <div>
+                                <div class="calculation-method-name">月平息</div>
+                                <div class="calculation-method-desc">1.62‰</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="interestRate" id="interestRateLabel">利率 (%)</label>
+                    <input type="number" id="interestRate" placeholder="请输入利率" step="0.01" value="3.72">
+                    <div class="error-message" id="interestRateError">请输入有效的利率</div>
+                </div>
+
+
+
+                <div class="input-group">
+                    <label for="loanTerm">贷款期限 (年)</label>
+                    <input type="number" id="loanTerm" placeholder="请输入贷款期限" value="3">
+                    <div class="error-message" id="loanTermError">请输入有效的贷款期限</div>
+                </div>
+
+                <button class="calculate-btn" onclick="calculateLoan()">计算还款</button>
+            </div>
+
+            <div class="results-section">
+                <div class="results-container">
+                    <div class="results-content">
+                        <h2 style="margin-bottom: 20px; color: #333;">计算结果</h2>
+                        
+                        <div class="result-item">
+                            <span class="result-label" id="paymentLabel">月还款额</span>
+                            <span class="result-value" id="periodicPayment">￥0</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">总还款额</span>
+                            <span class="result-value" id="totalPayment">￥0</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">总利息</span>
+                            <span class="result-value" id="totalInterest">￥0</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">利息占比</span>
+                            <span class="result-value" id="interestPercentage">0%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="interest-rates-section" id="interestRatesSection">
+                        <h3 style="margin-bottom: 15px; color: #333;">利率表示</h3>
+                        
+                        <div class="rate-item">
+                            <span class="rate-label">月利率</span>
+                            <span class="rate-value">0.458%</span>
+                        </div>
+                        
+                        <div class="rate-item">
+                            <span class="rate-label">季度利率</span>
+                            <span class="rate-value">1.375%</span>
+                        </div>
+                        
+                        <div class="rate-item">
+                            <span class="rate-label">半年度利率</span>
+                            <span class="rate-value">2.75%</span>
+                        </div>
+                        
+                        <div class="rate-item">
+                            <span class="rate-label">年度利率</span>
+                            <span class="rate-value">5.5%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container hidden" id="chartContainer">
+                <h3 style="margin-bottom: 15px; color: #333;">本金与利息比例</h3>
+                <div class="chart" id="pieChart"></div>
+                <div class="chart-legend">
+                    <div class="legend-item">
+                        <div class="legend-color legend-principal"></div>
+                        <span>本金</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-interest"></div>
+                        <span>利息</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="payment-schedule hidden" id="paymentSchedule">
+                <div class="schedule-header">
+                    <h3>还款计划表（前12期）</h3>
+                </div>
+                <table class="schedule-table">
+                    <thead>
+                        <tr>
+                            <th>期数</th>
+                            <th>还款额</th>
+                            <th>本金</th>
+                            <th>利息</th>
+                            <th>余额</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scheduleTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function selectPaymentMethod(element, method) {
+            // 清除所有选中状态
+            document.querySelectorAll('.method-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            // 选中当前选项
+            element.classList.add('selected');
+            element.querySelector('input[type="radio"]').checked = true;
+        }
+
+        function selectFrequency(element, frequency) {
+            // 清除所有选中状态
+            document.querySelectorAll('.frequency-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            // 选中当前选项
+            element.classList.add('selected');
+            element.querySelector('input[type="radio"]').checked = true;
+        }
+
+        function selectCalculationMethod(element, method, rateValue) {
+            // 清除所有选中状态
+            document.querySelectorAll('.calculation-method-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            // 选中当前选项
+            element.classList.add('selected');
+            element.querySelector('input[type="radio"]').checked = true;
+            
+            // 更新利率输入框的值
+            document.getElementById('interestRate').value = rateValue;
+            
+            // 更新利率标签的符号
+            const rateSymbols = {
+                'annualRate': '%',
+                'annualFlatRate': '%',
+                'monthlyRate': '‰',
+                'monthlyFlatRate': '‰'
+            };
+            
+            document.getElementById('interestRateLabel').textContent = '利率 (' + rateSymbols[method] + ')';
+        }
+
+        // 人民币大写转换函数
+        function updateLoanAmountDisplay() {
+            const amount = parseFloat(document.getElementById('loanAmount').value) || 0;
+            const chineseAmount = numberToChinese(amount);
+            document.getElementById('loanAmountChinese').textContent = chineseAmount;
+        }
+
+        // 数字转中文大写函数
+        function numberToChinese(num) {
+            if (num === 0) return '零元整';
+            
+            const chnNumChar = ["零", "壹", "贰", "叁", "肆", "伍", "陆", "柒", "捌", "玖"];
+            const chnUnitChar = ["", "拾", "佰", "仟"];
+            const chnUnitSection = ["", "万", "亿", "兆"];
+            
+            num = Math.floor(num); // 只处理整数部分
+            let strIns = '', chnStr = '';
+            let unitPos = 0;
+            let zero = false;
+            
+            while (num > 0) {
+                const section = num % 10000;
+                if (zero) {
+                    chnStr = chnNumChar[0] + chnStr;
+                    zero = false;
+                }
+                if (section !== 0) {
+                    strIns = sectionToChinese(section, chnNumChar, chnUnitChar);
+                    strIns += chnUnitSection[unitPos];
+                    chnStr = strIns + chnStr;
+                } else {
+                    zero = true;
+                }
+                unitPos++;
+                num = Math.floor(num / 10000);
+            }
+            
+            // 处理拾的情况，如10→拾，11→拾壹
+            if (chnStr.startsWith('壹拾')) {
+                chnStr = chnStr.substring(1);
+            }
+            
+            return chnStr + '元整';
+        }
+        
+        // 转换每四位数字的内部函数
+        function sectionToChinese(section, chnNumChar, chnUnitChar) {
+            let strIns = '', chnStr = '';
+            let unitPos = 0;
+            let zero = false;
+            
+            while (section > 0) {
+                const v = section % 10;
+                if (v === 0) {
+                    if (!zero) {
+                        zero = true;
+                        chnStr = chnNumChar[0] + chnStr;
+                    }
+                } else {
+                    zero = false;
+                    strIns = chnNumChar[v];
+                    strIns += chnUnitChar[unitPos];
+                    chnStr = strIns + chnStr;
+                }
+                unitPos++;
+                section = Math.floor(section / 10);
+            }
+            
+            // 移除末尾的零
+            while (chnStr.endsWith(chnNumChar[0])) {
+                chnStr = chnStr.slice(0, -1);
+            }
+            
+            return chnStr;
+        }
+
+
+
+
+
+        function calculateLoan() {
+            // 获取输入值
+            const loanAmount = parseFloat(document.getElementById('loanAmount').value);
+            const interestRate = parseFloat(document.getElementById('interestRate').value);
+            const loanTerm = parseFloat(document.getElementById('loanTerm').value);
+            const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+            const frequency = document.querySelector('input[name="frequency"]:checked').value;
+            const calculationMethod = document.querySelector('input[name="calculationMethod"]:checked').value;
+
+            // 验证输入
+            if (!validateInputs(loanAmount, interestRate, loanTerm)) {
+                return;
+            }
+
+            // 根据频次计算参数
+            const frequencyConfig = {
+                'monthly': { periods: 12, label: '月还款额', rateMultiplier: 1 },
+                'quarterly': { periods: 4, label: '季度还款额', rateMultiplier: 3 },
+                'semiAnnual': { periods: 2, label: '半年还款额', rateMultiplier: 6 },
+                'annual': { periods: 1, label: '年还款额', rateMultiplier: 12 }
+            };
+
+            const config = frequencyConfig[frequency];
+            
+            // 根据利率计算方式确定除数
+            let rateDivisor;
+            switch (calculationMethod) {
+                case 'annualRate':
+                case 'annualFlatRate':
+                    rateDivisor = 100;  // %号除以100
+                    break;
+                case 'monthlyRate':
+                case 'monthlyFlatRate':
+                    rateDivisor = 1000; // 千分号除以1000
+                    break;
+                default:
+                    rateDivisor = 100;
+            }
+            
+            // 计算基础利率（转换为小数形式）
+            const baseRate = interestRate / rateDivisor;
+            
+            // 根据还款频次计算周期利率
+            // 年利率需要除以12得到月利率，再根据频次调整
+            // 月利率直接使用，但需要根据频次调整
+            let periodicRate;
+            if (calculationMethod === 'annualRate' || calculationMethod === 'annualFlatRate') {
+                // 年利率：先除以12得到月利率，再根据频次调整
+                const monthlyRate = baseRate / 12;
+                switch (frequency) {
+                    case 'monthly':
+                        periodicRate = monthlyRate;
+                        break;
+                    case 'quarterly':
+                        periodicRate = monthlyRate * 3;
+                        break;
+                    case 'semiAnnual':
+                        periodicRate = monthlyRate * 6;
+                        break;
+                    case 'annual':
+                        periodicRate = baseRate;
+                        break;
+                }
+            } else {
+                // 月利率：直接使用，根据频次调整
+                switch (frequency) {
+                    case 'monthly':
+                        periodicRate = baseRate;
+                        break;
+                    case 'quarterly':
+                        periodicRate = baseRate * 3;
+                        break;
+                    case 'semiAnnual':
+                        periodicRate = baseRate * 6;
+                        break;
+                    case 'annual':
+                        periodicRate = baseRate * 12;
+                        break;
+                }
+            }
+            
+            // 计算总期数
+            const totalPeriods = loanTerm * config.periods;
+
+            let periodicPayment, totalPayment, totalInterest, interestPercentage;
+
+            if (paymentMethod === 'equalInstallment') {
+                // 使用PMT公式计算等额本息还款
+                // PMT = P * [r(1+r)^n] / [(1+r)^n - 1]
+                // 其中：P=本金，r=每期利率，n=总期数
+                const PMT = (principal, rate, periods) => {
+                    if (rate === 0) {
+                        // 如果利率为0，则每期还款额 = 本金 / 期数
+                        return principal / periods;
+                    }
+                    return principal * (rate * Math.pow(1 + rate, periods)) / 
+                           (Math.pow(1 + rate, periods) - 1);
+                };
+                
+                periodicPayment = PMT(loanAmount, periodicRate, totalPeriods);
+                totalPayment = periodicPayment * totalPeriods;
+                totalInterest = totalPayment - loanAmount;
+                interestPercentage = (totalInterest / totalPayment) * 100;
+            } else {
+                // 等额本金还款法
+                const periodicPrincipal = loanAmount / totalPeriods;
+                let totalInterestCalculated = 0;
+                let remainingBalance = loanAmount;
+
+                // 计算前12期的利息总和
+                const displayPeriods = Math.min(12, totalPeriods);
+                for (let i = 1; i <= displayPeriods; i++) {
+                    const interestPayment = remainingBalance * periodicRate;
+                    totalInterestCalculated += interestPayment;
+                    remainingBalance -= periodicPrincipal;
+                }
+
+                // 估算总利息（线性外推）
+                const avgRemainingBalance = loanAmount * 0.5;
+                totalInterest = avgRemainingBalance * periodicRate * totalPeriods;
+                totalPayment = loanAmount + totalInterest;
+                interestPercentage = (totalInterest / totalPayment) * 100;
+
+                // 第一期还款额
+                periodicPayment = periodicPrincipal + loanAmount * periodicRate;
+            }
+
+            // 显示结果（保留2位小数）
+            displayResults(periodicPayment, totalPayment, totalInterest, interestPercentage, config.label);
+
+            // 生成还款计划表
+            generatePaymentSchedule(loanAmount, periodicRate, periodicPayment, totalPeriods, paymentMethod, frequency);
+
+            // 显示图表
+            updateChart(loanAmount, totalInterest);
+        }
+
+        function validateInputs(loanAmount, interestRate, loanTerm) {
+            let isValid = true;
+
+            // 清除错误信息
+            document.querySelectorAll('.error-message').forEach(error => {
+                error.style.display = 'none';
+            });
+
+            // 验证贷款金额
+            if (!loanAmount || loanAmount <= 0) {
+                showError('loanAmountError');
+                isValid = false;
+            }
+
+            // 验证利率
+            if (!interestRate || interestRate < 0 || interestRate > 100) {
+                showError('interestRateError');
+                isValid = false;
+            }
+
+            // 验证贷款期限
+            if (!loanTerm || loanTerm <= 0 || loanTerm > 50) {
+                showError('loanTermError');
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        function showError(errorId) {
+            document.getElementById(errorId).style.display = 'block';
+        }
+
+        function displayResults(periodicPayment, totalPayment, totalInterest, interestPercentage, paymentLabel) {
+            document.getElementById('paymentLabel').textContent = paymentLabel;
+            document.getElementById('periodicPayment').textContent = '￥' + periodicPayment.toFixed(2);
+            document.getElementById('totalPayment').textContent = '￥' + totalPayment.toFixed(2);
+            document.getElementById('totalInterest').textContent = '￥' + totalInterest.toFixed(2);
+            document.getElementById('interestPercentage').textContent = interestPercentage.toFixed(2) + '%';
+
+            // 显示图表和还款计划
+            document.getElementById('chartContainer').classList.remove('hidden');
+            document.getElementById('paymentSchedule').classList.remove('hidden');
+        }
+
+        function generatePaymentSchedule(loanAmount, periodicRate, periodicPayment, totalPeriods, paymentMethod, frequency) {
+            const scheduleBody = document.getElementById('scheduleTableBody');
+            scheduleBody.innerHTML = '';
+
+            let remainingBalance = loanAmount;
+            const maxRows = Math.min(12, totalPeriods); // 最多显示12期
+
+            for (let i = 1; i <= maxRows; i++) {
+                let principalPayment, interestPayment, currentPeriodicPayment;
+
+                if (paymentMethod === 'equalInstallment') {
+                    // 等额本息
+                    interestPayment = remainingBalance * periodicRate;
+                    principalPayment = periodicPayment - interestPayment;
+                    currentPeriodicPayment = periodicPayment;
+                } else {
+                    // 等额本金
+                    principalPayment = loanAmount / totalPeriods; // 固定本金
+                    interestPayment = remainingBalance * periodicRate;
+                    currentPeriodicPayment = principalPayment + interestPayment;
+                }
+                
+                // 更新剩余本金
+                remainingBalance -= principalPayment;
+
+                // 获取频次标签
+                const frequencyLabels = {
+                    'monthly': '月',
+                    'quarterly': '季度',
+                    'semiAnnual': '半年',
+                    'annual': '年'
+                };
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${i}${frequencyLabels[frequency]}</td>
+                    <td>￥${currentPeriodicPayment.toFixed(3)}</td>
+                    <td>￥${principalPayment.toFixed(3)}</td>
+                    <td>￥${interestPayment.toFixed(3)}</td>
+                    <td>￥${Math.max(0, remainingBalance).toFixed(3)}</td>
+                `;
+                scheduleBody.appendChild(row);
+            }
+        }
+
+        function updateChart(principal, interest) {
+            const total = principal + interest;
+            const principalAngle = (principal / total) * 360;
+            
+            const chart = document.getElementById('pieChart');
+            chart.style.background = `conic-gradient(
+                #4facfe 0deg ${principalAngle}deg,
+                #667eea ${principalAngle}deg 360deg
+            )`;
+        }
+
+
+
+        // 页面加载时初始化
+        window.onload = function() {
+            // 初始化选中状态
+            document.querySelector('.frequency-option').classList.add('selected');
+            document.querySelector('input[name="frequency"][value="monthly"]').checked = true;
+            
+            // 初始化利率标签
+            selectCalculationMethod(
+                document.querySelector('.calculation-method-option[onclick*="annualRate"]'),
+                'annualRate',
+                3.72
+            );
+            
+            // 初始化贷款金额大写显示
+            updateLoanAmountDisplay();
+        };
+    </script>
+</body>
+</html>
