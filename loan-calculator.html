@@ -718,20 +718,7 @@
                 </div>
             </div>
 
-            <div class="chart-container hidden" id="chartContainer">
-                <h3 style="margin-bottom: 15px; color: #333;">本金与利息比例</h3>
-                <div class="chart" id="pieChart"></div>
-                <div class="chart-legend">
-                    <div class="legend-item">
-                        <div class="legend-color legend-principal"></div>
-                        <span>本金</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color legend-interest"></div>
-                        <span>利息</span>
-                    </div>
-                </div>
-            </div>
+
 
             <div class="payment-schedule hidden" id="paymentSchedule">
                 <div class="schedule-header">
@@ -1110,9 +1097,6 @@
 
             // 生成还款计划表
             generatePaymentSchedule(loanAmount, baseRate, periodicPayment, totalPeriods, paymentMethod, frequency, calculationMethod, isFlatRate, config.periods);
-
-            // 显示图表
-            updateChart(loanAmount, totalInterest);
         }
 
         function validateInputs(loanAmount, interestRate, loanTerm) {
@@ -1158,8 +1142,7 @@
             // 更新利率表示信息
             updateInterestRatesDisplay();
 
-            // 显示图表和还款计划
-            document.getElementById('chartContainer').classList.remove('hidden');
+            // 显示还款计划
             document.getElementById('paymentSchedule').classList.remove('hidden');
         }
 
@@ -1424,16 +1407,7 @@
             }
         }
 
-        function updateChart(principal, interest) {
-            const total = principal + interest;
-            const principalAngle = (principal / total) * 360;
-            
-            const chart = document.getElementById('pieChart');
-            chart.style.background = `conic-gradient(
-                #4facfe 0deg ${principalAngle}deg,
-                #667eea ${principalAngle}deg 360deg
-            )`;
-        }
+
 
 
 
