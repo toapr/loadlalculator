@@ -696,23 +696,23 @@
                         <h3 style="margin-bottom: 15px; color: #333;">利率表示</h3>
                         
                         <div class="rate-item">
+                            <span class="rate-label">年利率</span>
+                            <span class="rate-value">3.72%</span>
+                        </div>
+                        
+                        <div class="rate-item">
+                            <span class="rate-label">年平息</span>
+                            <span class="rate-value">1.95%</span>
+                        </div>
+                        
+                        <div class="rate-item">
                             <span class="rate-label">月利率</span>
-                            <span class="rate-value">0.458%</span>
+                            <span class="rate-value">3.10‰</span>
                         </div>
                         
                         <div class="rate-item">
-                            <span class="rate-label">季度利率</span>
-                            <span class="rate-value">1.375%</span>
-                        </div>
-                        
-                        <div class="rate-item">
-                            <span class="rate-label">半年度利率</span>
-                            <span class="rate-value">2.75%</span>
-                        </div>
-                        
-                        <div class="rate-item">
-                            <span class="rate-label">年度利率</span>
-                            <span class="rate-value">5.5%</span>
+                            <span class="rate-label">月平息</span>
+                            <span class="rate-value">1.62‰</span>
                         </div>
                     </div>
                 </div>
@@ -905,16 +905,20 @@
 
             const config = frequencyConfig[frequency];
             
-            // 根据利率计算方式确定除数
+            // 根据利率计算方式确定除数和计算方法
             let rateDivisor;
+            let isFlatRate = false;
+            
             switch (calculationMethod) {
                 case 'annualRate':
                 case 'annualFlatRate':
                     rateDivisor = 100;  // %号除以100
+                    isFlatRate = (calculationMethod === 'annualFlatRate');
                     break;
                 case 'monthlyRate':
                 case 'monthlyFlatRate':
                     rateDivisor = 1000; // 千分号除以1000
+                    isFlatRate = (calculationMethod === 'monthlyFlatRate');
                     break;
                 default:
                     rateDivisor = 100;
@@ -923,96 +927,189 @@
             // 计算基础利率（转换为小数形式）
             const baseRate = interestRate / rateDivisor;
             
-            // 根据还款频次计算周期利率
-            // 年利率需要除以12得到月利率，再根据频次调整
-            // 月利率直接使用，但需要根据频次调整
-            let periodicRate;
-            if (calculationMethod === 'annualRate' || calculationMethod === 'annualFlatRate') {
-                // 年利率：先除以12得到月利率，再根据频次调整
-                const monthlyRate = baseRate / 12;
-                switch (frequency) {
-                    case 'monthly':
-                        periodicRate = monthlyRate;
-                        break;
-                    case 'quarterly':
-                        periodicRate = monthlyRate * 3;
-                        break;
-                    case 'semiAnnual':
-                        periodicRate = monthlyRate * 6;
-                        break;
-                    case 'annual':
-                        periodicRate = baseRate;
-                        break;
-                }
-            } else {
-                // 月利率：直接使用，根据频次调整
-                switch (frequency) {
-                    case 'monthly':
-                        periodicRate = baseRate;
-                        break;
-                    case 'quarterly':
-                        periodicRate = baseRate * 3;
-                        break;
-                    case 'semiAnnual':
-                        periodicRate = baseRate * 6;
-                        break;
-                    case 'annual':
-                        periodicRate = baseRate * 12;
-                        break;
-                }
-            }
-            
             // 计算总期数
             const totalPeriods = loanTerm * config.periods;
 
             let periodicPayment, totalPayment, totalInterest, interestPercentage;
 
-            if (paymentMethod === 'equalInstallment') {
-                // 使用PMT公式计算等额本息还款
-                // PMT = P * [r(1+r)^n] / [(1+r)^n - 1]
-                // 其中：P=本金，r=每期利率，n=总期数
-                const PMT = (principal, rate, periods) => {
-                    if (rate === 0) {
-                        // 如果利率为0，则每期还款额 = 本金 / 期数
-                        return principal / periods;
-                    }
-                    return principal * (rate * Math.pow(1 + rate, periods)) / 
-                           (Math.pow(1 + rate, periods) - 1);
-                };
+            // 平息计算方式
+            if (isFlatRate) {
+                // 月平息计算方式：以固定贷款本金为基数计算利息
+                let periodicFlatRate;
                 
-                periodicPayment = PMT(loanAmount, periodicRate, totalPeriods);
-                totalPayment = periodicPayment * totalPeriods;
-                totalInterest = totalPayment - loanAmount;
-                interestPercentage = (totalInterest / totalPayment) * 100;
+                if (paymentMethod === 'equalInstallment') {
+                    // 等额本息的平息计算：每期利息 = 贷款本金 × 周期平息率
+                    if (calculationMethod === 'annualFlatRate') {
+                        // 年平息：转换为周期平息率
+                        switch (frequency) {
+                            case 'monthly':
+                                periodicFlatRate = baseRate / 12;
+                                break;
+                            case 'quarterly':
+                                periodicFlatRate = baseRate / 4;
+                                break;
+                            case 'semiAnnual':
+                                periodicFlatRate = baseRate / 2;
+                                break;
+                            case 'annual':
+                                periodicFlatRate = baseRate;
+                                break;
+                        }
+                    } else {
+                        // 月平息：直接使用
+                        switch (frequency) {
+                            case 'monthly':
+                                periodicFlatRate = baseRate;
+                                break;
+                            case 'quarterly':
+                                periodicFlatRate = baseRate * 3;
+                                break;
+                            case 'semiAnnual':
+                                periodicFlatRate = baseRate * 6;
+                                break;
+                            case 'annual':
+                                periodicFlatRate = baseRate * 12;
+                                break;
+                        }
+                    }
+                    
+                    // 计算每期固定本金
+                    const periodicPrincipal = loanAmount / totalPeriods;
+                    // 每期固定利息 = 贷款本金 × 周期平息率
+                    const periodicInterest = loanAmount * periodicFlatRate;
+                    // 每期还款额 = 固定本金 + 固定利息
+                    periodicPayment = periodicPrincipal + periodicInterest;
+                    totalPayment = periodicPayment * totalPeriods;
+                    totalInterest = totalPayment - loanAmount;
+                    interestPercentage = (totalInterest / totalPayment) * 100;
+                } else {
+                    // 等额本金的平息计算
+                    // 计算每期固定本金
+                    const periodicPrincipal = loanAmount / totalPeriods;
+                    
+                    if (calculationMethod === 'annualFlatRate') {
+                        // 年平息：按年计算固定利息
+                        // 总利息 = 贷款本金 × 年平息率 × 贷款年数
+                        totalInterest = loanAmount * baseRate * loanTerm;
+                        totalPayment = loanAmount + totalInterest;
+                        interestPercentage = (totalInterest / totalPayment) * 100;
+                        
+                        // 第1期利息 = (贷款本金 × 年平息率) ÷ 12
+                        const firstPeriodInterest = (loanAmount * baseRate) / 12;
+                        periodicPayment = periodicPrincipal + firstPeriodInterest;
+                    } else {
+                        // 月平息：按月计算固定利息
+                        // 月平息是千分号，baseRate已经是除以1000的结果
+                        // 月平息是固定利息概念，不管还款频次如何，都是每月固定利息
+                        // 总利息 = 贷款本金 × 月平息率 × 贷款月数（而不是总期数）
+                        const totalMonths = loanTerm * 12; // 贷款总月数
+                        totalInterest = loanAmount * baseRate * totalMonths;
+                        totalPayment = loanAmount + totalInterest;
+                        interestPercentage = (totalInterest / totalPayment) * 100;
+                        
+                        // 第1期利息 = 贷款本金 × 月平息率 × 该期所含月数
+                        let periodsInFirstPayment;
+                        switch (frequency) {
+                            case 'monthly':
+                                periodsInFirstPayment = 1;
+                                break;
+                            case 'quarterly':
+                                periodsInFirstPayment = 3;
+                                break;
+                            case 'semiAnnual':
+                                periodsInFirstPayment = 6;
+                                break;
+                            case 'annual':
+                                periodsInFirstPayment = 12;
+                                break;
+                            default:
+                                periodsInFirstPayment = 1;
+                        }
+                        const firstPeriodInterest = loanAmount * baseRate * periodsInFirstPayment;
+                        periodicPayment = periodicPrincipal + firstPeriodInterest;
+                    }
+                }
             } else {
-                // 等额本金还款法
-                const periodicPrincipal = loanAmount / totalPeriods;
-                let totalInterestCalculated = 0;
-                let remainingBalance = loanAmount;
-
-                // 计算前12期的利息总和
-                const displayPeriods = Math.min(12, totalPeriods);
-                for (let i = 1; i <= displayPeriods; i++) {
-                    const interestPayment = remainingBalance * periodicRate;
-                    totalInterestCalculated += interestPayment;
-                    remainingBalance -= periodicPrincipal;
+                // 传统利率计算方式
+                // 根据还款频次计算周期利率
+                let periodicRate;
+                if (calculationMethod === 'annualRate') {
+                    // 年利率：先除以12得到月利率，再根据频次调整
+                    const monthlyRate = baseRate / 12;
+                    switch (frequency) {
+                        case 'monthly':
+                            periodicRate = monthlyRate;
+                            break;
+                        case 'quarterly':
+                            periodicRate = monthlyRate * 3;
+                            break;
+                        case 'semiAnnual':
+                            periodicRate = monthlyRate * 6;
+                            break;
+                        case 'annual':
+                            periodicRate = baseRate;
+                            break;
+                    }
+                } else {
+                    // 月利率：直接使用，根据频次调整
+                    switch (frequency) {
+                        case 'monthly':
+                            periodicRate = baseRate;
+                            break;
+                        case 'quarterly':
+                            periodicRate = baseRate * 3;
+                            break;
+                        case 'semiAnnual':
+                            periodicRate = baseRate * 6;
+                            break;
+                        case 'annual':
+                            periodicRate = baseRate * 12;
+                            break;
+                    }
                 }
 
-                // 估算总利息（线性外推）
-                const avgRemainingBalance = loanAmount * 0.5;
-                totalInterest = avgRemainingBalance * periodicRate * totalPeriods;
-                totalPayment = loanAmount + totalInterest;
-                interestPercentage = (totalInterest / totalPayment) * 100;
-
-                // 第一期还款额
-                periodicPayment = periodicPrincipal + loanAmount * periodicRate;
+                if (paymentMethod === 'equalInstallment') {
+                    // 使用PMT公式计算等额本息还款
+                    // PMT = P * [r(1+r)^n] / [(1+r)^n - 1]
+                    // 其中：P=本金，r=每期利率，n=总期数
+                    const PMT = (principal, rate, periods) => {
+                        if (rate === 0) {
+                            // 如果利率为0，则每期还款额 = 本金 / 期数
+                            return principal / periods;
+                        }
+                        return principal * (rate * Math.pow(1 + rate, periods)) / 
+                               (Math.pow(1 + rate, periods) - 1);
+                    };
+                    
+                    periodicPayment = PMT(loanAmount, periodicRate, totalPeriods);
+                    totalPayment = periodicPayment * totalPeriods;
+                    totalInterest = totalPayment - loanAmount;
+                    interestPercentage = (totalInterest / totalPayment) * 100;
+                } else {
+                    // 等额本金还款法
+                    const periodicPrincipal = loanAmount / totalPeriods;
+                    
+                    // 第1期利息 = 贷款本金 × 周期利率
+                    const firstPeriodInterest = loanAmount * periodicRate;
+                    periodicPayment = periodicPrincipal + firstPeriodInterest;
+                    
+                    // 总利息计算（等差数列求和）
+                    // 首项：贷款本金 × 周期利率
+                    // 末项：(贷款本金 - (总期数-1) × 固定本金) × 周期利率
+                    // 项数：总期数
+                    const firstInterest = loanAmount * periodicRate;
+                    const lastInterest = (loanAmount - (totalPeriods - 1) * periodicPrincipal) * periodicRate;
+                    totalInterest = (firstInterest + lastInterest) * totalPeriods / 2;
+                    totalPayment = loanAmount + totalInterest;
+                    interestPercentage = (totalInterest / totalPayment) * 100;
+                }
             }
 
             // 显示结果（保留2位小数）
             displayResults(periodicPayment, totalPayment, totalInterest, interestPercentage, config.label);
 
             // 生成还款计划表
-            generatePaymentSchedule(loanAmount, periodicRate, periodicPayment, totalPeriods, paymentMethod, frequency);
+            generatePaymentSchedule(loanAmount, baseRate, periodicPayment, totalPeriods, paymentMethod, frequency, calculationMethod, isFlatRate, config.periods);
 
             // 显示图表
             updateChart(loanAmount, totalInterest);
@@ -1058,12 +1155,73 @@
             document.getElementById('totalInterest').textContent = '￥' + totalInterest.toFixed(2);
             document.getElementById('interestPercentage').textContent = interestPercentage.toFixed(2) + '%';
 
+            // 更新利率表示信息
+            updateInterestRatesDisplay();
+
             // 显示图表和还款计划
             document.getElementById('chartContainer').classList.remove('hidden');
             document.getElementById('paymentSchedule').classList.remove('hidden');
         }
 
-        function generatePaymentSchedule(loanAmount, periodicRate, periodicPayment, totalPeriods, paymentMethod, frequency) {
+        function updateInterestRatesDisplay() {
+            // 获取当前输入的利率和计算方式
+            const interestRate = parseFloat(document.getElementById('interestRate').value);
+            const calculationMethod = document.querySelector('input[name="calculationMethod"]:checked').value;
+            
+            if (!interestRate) return;
+            
+            // 根据计算方式确定除数和基础利率
+            let baseRate;
+            let annualRate, annualFlatRate, monthlyRate, monthlyFlatRate;
+            
+            switch (calculationMethod) {
+                case 'annualRate':
+                    baseRate = interestRate / 100;
+                    annualRate = baseRate; // 3.72%
+                    annualFlatRate = baseRate * 0.524; // 1.95%
+                    monthlyRate = baseRate / 12; // 0.31%
+                    monthlyFlatRate = (baseRate / 12) * 0.524; // 0.1625%
+                    break;
+                case 'annualFlatRate':
+                    baseRate = interestRate / 100;
+                    annualRate = baseRate / 0.524; // 3.72%
+                    annualFlatRate = baseRate; // 1.95%
+                    monthlyRate = (baseRate / 0.524) / 12; // 0.31%
+                    monthlyFlatRate = baseRate / 12; // 0.1625%
+                    break;
+                case 'monthlyRate':
+                    baseRate = interestRate / 1000;
+                    annualRate = baseRate * 12; // 3.72%
+                    annualFlatRate = (baseRate * 12) * 0.524; // 1.95%
+                    monthlyRate = baseRate; // 0.31%
+                    monthlyFlatRate = baseRate * 0.524; // 0.1625%
+                    break;
+                case 'monthlyFlatRate':
+                    baseRate = interestRate / 1000;
+                    annualRate = (baseRate / 0.524) * 12; // 3.72%
+                    annualFlatRate = baseRate * 12; // 1.95%
+                    monthlyRate = baseRate / 0.524; // 0.31%
+                    monthlyFlatRate = baseRate; // 0.1625%
+                    break;
+                default:
+                    baseRate = interestRate / 100;
+                    annualRate = baseRate;
+                    annualFlatRate = baseRate * 0.524;
+                    monthlyRate = baseRate / 12;
+                    monthlyFlatRate = (baseRate / 12) * 0.524;
+            }
+            
+            // 更新利率表示区域
+            const rateItems = document.querySelectorAll('.rate-item .rate-value');
+            if (rateItems.length >= 4) {
+                rateItems[0].textContent = (annualRate * 100).toFixed(2) + '%'; // 年利率
+                rateItems[1].textContent = (annualFlatRate * 100).toFixed(2) + '%'; // 年平息
+                rateItems[2].textContent = (monthlyRate * 100).toFixed(3) + '‰'; // 月利率
+                rateItems[3].textContent = (monthlyFlatRate * 1000).toFixed(3) + '‰'; // 月平息
+            }
+        }
+
+        function generatePaymentSchedule(loanAmount, baseRate, periodicPayment, totalPeriods, paymentMethod, frequency, calculationMethod, isFlatRate, periodsPerYear) {
             const scheduleBody = document.getElementById('scheduleTableBody');
             scheduleBody.innerHTML = '';
 
@@ -1075,14 +1233,172 @@
 
                 if (paymentMethod === 'equalInstallment') {
                     // 等额本息
-                    interestPayment = remainingBalance * periodicRate;
-                    principalPayment = periodicPayment - interestPayment;
-                    currentPeriodicPayment = periodicPayment;
+                    if (isFlatRate) {
+                        // 平息计算：每期利息 = 贷款本金 × 周期平息率
+                        let periodicFlatRate;
+                        
+                        if (calculationMethod === 'annualFlatRate') {
+                            // 年平息：转换为周期平息率
+                            switch (frequency) {
+                                case 'monthly':
+                                    periodicFlatRate = baseRate / 12;
+                                    break;
+                                case 'quarterly':
+                                    periodicFlatRate = baseRate / 4;
+                                    break;
+                                case 'semiAnnual':
+                                    periodicFlatRate = baseRate / 2;
+                                    break;
+                                case 'annual':
+                                    periodicFlatRate = baseRate;
+                                    break;
+                            }
+                        } else {
+                            // 月平息：直接使用
+                            switch (frequency) {
+                                case 'monthly':
+                                    periodicFlatRate = baseRate;
+                                    break;
+                                case 'quarterly':
+                                    periodicFlatRate = baseRate * 3;
+                                    break;
+                                case 'semiAnnual':
+                                    periodicFlatRate = baseRate * 6;
+                                    break;
+                                case 'annual':
+                                    periodicFlatRate = baseRate * 12;
+                                    break;
+                            }
+                        }
+                        
+                        interestPayment = loanAmount * periodicFlatRate; // 平息利息固定
+                        principalPayment = periodicPayment - interestPayment;
+                        currentPeriodicPayment = periodicPayment;
+                    } else {
+                        // 传统利率计算
+                        let periodicRate;
+                        if (calculationMethod === 'annualRate') {
+                            const monthlyRate = baseRate / 12;
+                            switch (frequency) {
+                                case 'monthly':
+                                    periodicRate = monthlyRate;
+                                    break;
+                                case 'quarterly':
+                                    periodicRate = monthlyRate * 3;
+                                    break;
+                                case 'semiAnnual':
+                                    periodicRate = monthlyRate * 6;
+                                    break;
+                                case 'annual':
+                                    periodicRate = baseRate;
+                                    break;
+                            }
+                        } else {
+                            // 月利率
+                            switch (frequency) {
+                                case 'monthly':
+                                    periodicRate = baseRate;
+                                    break;
+                                case 'quarterly':
+                                    periodicRate = baseRate * 3;
+                                    break;
+                                case 'semiAnnual':
+                                    periodicRate = baseRate * 6;
+                                    break;
+                                case 'annual':
+                                    periodicRate = baseRate * 12;
+                                    break;
+                            }
+                        }
+                        
+                        interestPayment = remainingBalance * periodicRate;
+                        principalPayment = periodicPayment - interestPayment;
+                        currentPeriodicPayment = periodicPayment;
+                    }
                 } else {
                     // 等额本金
                     principalPayment = loanAmount / totalPeriods; // 固定本金
-                    interestPayment = remainingBalance * periodicRate;
-                    currentPeriodicPayment = principalPayment + interestPayment;
+                    
+                    if (isFlatRate) {
+                        // 平息计算：每期利息根据还款频次调整
+                        let periodicFlatRate;
+                        
+                        if (calculationMethod === 'annualFlatRate') {
+                            // 年平息：按年计算固定利息
+                            switch (frequency) {
+                                case 'monthly':
+                                    periodicFlatRate = baseRate / 12;
+                                    break;
+                                case 'quarterly':
+                                    periodicFlatRate = baseRate / 4;
+                                    break;
+                                case 'semiAnnual':
+                                    periodicFlatRate = baseRate / 2;
+                                    break;
+                                case 'annual':
+                                    periodicFlatRate = baseRate;
+                                    break;
+                            }
+                        } else {
+                            // 月平息：按月计算固定利息
+                            switch (frequency) {
+                                case 'monthly':
+                                    periodicFlatRate = baseRate;
+                                    break;
+                                case 'quarterly':
+                                    periodicFlatRate = baseRate * 3;
+                                    break;
+                                case 'semiAnnual':
+                                    periodicFlatRate = baseRate * 6;
+                                    break;
+                                case 'annual':
+                                    periodicFlatRate = baseRate * 12;
+                                    break;
+                            }
+                        }
+                        
+                        interestPayment = loanAmount * periodicFlatRate; // 平息利息固定
+                        currentPeriodicPayment = principalPayment + interestPayment;
+                    } else {
+                        // 传统利率计算
+                        let periodicRate;
+                        if (calculationMethod === 'annualRate') {
+                            const monthlyRate = baseRate / 12;
+                            switch (frequency) {
+                                case 'monthly':
+                                    periodicRate = monthlyRate;
+                                    break;
+                                case 'quarterly':
+                                    periodicRate = monthlyRate * 3;
+                                    break;
+                                case 'semiAnnual':
+                                    periodicRate = monthlyRate * 6;
+                                    break;
+                                case 'annual':
+                                    periodicRate = baseRate;
+                                    break;
+                            }
+                        } else {
+                            // 月利率
+                            switch (frequency) {
+                                case 'monthly':
+                                    periodicRate = baseRate;
+                                    break;
+                                case 'quarterly':
+                                    periodicRate = baseRate * 3;
+                                    break;
+                                case 'semiAnnual':
+                                    periodicRate = baseRate * 6;
+                                    break;
+                                case 'annual':
+                                    periodicRate = baseRate * 12;
+                                    break;
+                            }
+                        }
+                        
+                        interestPayment = remainingBalance * periodicRate;
+                        currentPeriodicPayment = principalPayment + interestPayment;
+                    }
                 }
                 
                 // 更新剩余本金
