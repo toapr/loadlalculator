@@ -514,28 +514,7 @@
 
 
 
-        .rate-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid #e1e5f7;
-        }
 
-        .rate-item:last-child {
-            border-bottom: none;
-        }
-
-        .rate-label {
-            font-weight: 600;
-            color: #333;
-        }
-
-        .rate-value {
-            font-size: 1.1em;
-            font-weight: 700;
-            color: #667eea;
-        }
     </style>
 </head>
 <body>
@@ -695,24 +674,24 @@
                     <div class="interest-rates-section" id="interestRatesSection">
                         <h3 style="margin-bottom: 15px; color: #333;">利率表示</h3>
                         
-                        <div class="rate-item">
-                            <span class="rate-label">年利率</span>
-                            <span class="rate-value">3.72%</span>
+                        <div class="result-item">
+                            <span class="result-label">年利率</span>
+                            <span class="result-value" id="annualRateDisplay">0%</span>
                         </div>
                         
-                        <div class="rate-item">
-                            <span class="rate-label">年平息</span>
-                            <span class="rate-value">1.95%</span>
+                        <div class="result-item">
+                            <span class="result-label">年平息</span>
+                            <span class="result-value" id="annualFlatRateDisplay">0%</span>
                         </div>
                         
-                        <div class="rate-item">
-                            <span class="rate-label">月利率</span>
-                            <span class="rate-value">3.10‰</span>
+                        <div class="result-item">
+                            <span class="result-label">月利率</span>
+                            <span class="result-value" id="monthlyRateDisplay">0‰</span>
                         </div>
                         
-                        <div class="rate-item">
-                            <span class="rate-label">月平息</span>
-                            <span class="rate-value">1.62‰</span>
+                        <div class="result-item">
+                            <span class="result-label">月平息</span>
+                            <span class="result-value" id="monthlyFlatRateDisplay">0‰</span>
                         </div>
                     </div>
                 </div>
@@ -1195,13 +1174,10 @@
             }
             
             // 更新利率表示区域
-            const rateItems = document.querySelectorAll('.rate-item .rate-value');
-            if (rateItems.length >= 4) {
-                rateItems[0].textContent = (annualRate * 100).toFixed(2) + '%'; // 年利率
-                rateItems[1].textContent = (annualFlatRate * 100).toFixed(2) + '%'; // 年平息
-                rateItems[2].textContent = (monthlyRate * 100).toFixed(3) + '‰'; // 月利率
-                rateItems[3].textContent = (monthlyFlatRate * 1000).toFixed(3) + '‰'; // 月平息
-            }
+            document.getElementById('annualRateDisplay').textContent = (annualRate * 100).toFixed(2) + '%';
+            document.getElementById('annualFlatRateDisplay').textContent = (annualFlatRate * 100).toFixed(2) + '%';
+            document.getElementById('monthlyRateDisplay').textContent = (monthlyRate * 100).toFixed(3) + '‰';
+            document.getElementById('monthlyFlatRateDisplay').textContent = (monthlyFlatRate * 1000).toFixed(3) + '‰';
         }
 
         function generatePaymentSchedule(loanAmount, baseRate, periodicPayment, totalPeriods, paymentMethod, frequency, calculationMethod, isFlatRate, periodsPerYear) {
